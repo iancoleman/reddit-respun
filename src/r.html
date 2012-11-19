@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Reddit Respun</title>
+		<favicon ><!-- TODO!!! as image uri -->
+		<link rel="stylesheet" type="text/css" href="style.css">
+	</head>
+	<body>
+		<div id="heading">
+			<div id="subreddit_input">
+				<label for="subreddit">Subreddit: </label>
+				<input type="text" id="subreddit" value="all">
+			</div>
+		</div>
+
+
+		
+		<div id="side_column" class="middle_row"></div>
+
+		
+		<div id="reddit_content" class="middle_row">
+			<iframe src=""></iframe>
+		</div>
+
+		
+
+		<div id="footer"></div>
+
+		<script id="list_template" type="text/template">
+
+			<div class="title">
+				<% if (thumbnail.indexOf('http') > -1 && thumbnail.length > 1) { %>
+					<div class="thumbnail"><img src="<%- thumbnail %>"></div>
+				<% } %>
+				<%- title %>
+			</div>
+			<div class="row_meta">
+				<% if (over_18) { %>
+					<span class="nsfw"><acronym title=​"Adult content: Not Safe For Work">NSFW</acronym></span>
+				<% } %>
+				<%- subreddit %> - (<%- domain %>)
+			</div>
+		</script>
+
+		<script id="footer_template" type="text/template">
+			<div id="title">
+				<a href="<%- url %>" target="_blank">
+					<%- title %>
+				</a>
+			</div>
+			<div id="meta">
+				submitted
+				<div id="ago"><%- created_utc.toFuzzyTime() %> ago</div>
+				by
+				<div id="author">
+					<a href="http://www.reddit.com/user/<%- author %>" target="blank"><%- author %></a>
+				</div>
+				-
+				<div id="comments">
+					<a href="http://www.reddit.com<%- permalink %>" target="blank"><%- num_comments %> comments</a>
+				</div>
+				 -
+				<div id="url"><%- url %></div>
+		</script>
+
+
+		<script src="jquery.js"></script>
+		<script src="underscore.js"></script>
+		<script src="app.js"></script>
+
+	</body>
+</html>
