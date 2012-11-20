@@ -19,7 +19,7 @@ a:hover {
 #heading input {
 	font-size: 1em;
 }
-#subreddit_input {
+#subreddit_input_container {
 	padding-top: 15px;
 }
 .middle_row {
@@ -27,31 +27,36 @@ a:hover {
 	height: 80%;
 	vertical-align: top;
 }
-#side_column {
+#reddit_list {
 	width: 25%;
 	border: 1px solid #F8F8F8;
 	padding: 0 0.3%;
 	overflow: auto;
 }
-.side_column_row {
+.reddit_list_row {
 	padding: 1em 0.5em;
 	border: 1px solid white;
 	color: #333;
 	min-height: 100px;
 }
-.side_column_row:hover {
+.reddit_list_row:hover {
 	border: 1px solid #BBB;
 }
-.side_column_row:nth-child(odd) {
+.reddit_list_row:nth-child(odd) {
 	background-color: #F8F8F8;
 }
-.side_column_row .thumbnail {
+.reddit_list_row .thumbnail {
 	margin: 0 7px;
 	float: left;
 }
 .row_meta {
 	font-size: 0.9em;
 	color: #AAA;
+}
+.ajax_status {
+	font-size: 2em;
+	margin-top: 2em;
+	text-align: center;
 }
 #reddit_content {
 	width: 73%;
