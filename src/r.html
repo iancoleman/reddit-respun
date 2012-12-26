@@ -7,9 +7,40 @@
 	</head>
 	<body>
 		<div id="heading">
-			<div id="subreddit_input_container">
-				<label for="subreddit_input">Subreddit: </label>
-				<input type="text" id="subreddit_input" value="all">
+			<div id="personalisation">
+				<div id="subreddit_input_container">
+					<label for="subreddit_input">Subreddit: </label>
+					<input type="text" id="subreddit_input" value="all">
+				</div>
+
+				<div id="subreddits"></div>
+
+				<div id="login_form_container">
+					<div id="login_stage_1">
+						<input id="login_username" type="text" id="user" name="user" placeholder="username" />
+						<input id="login_password" type="password" id="password" name="passwd" placeholder="password" />
+						<button id="login_button">Login</button>
+					</div>
+					
+					<div id="login_stage_2">
+						<iframe id="login_iframe" src=""></iframe>
+						<br>
+						<label for="modhash">Copy the modhash value here:</label>
+						<input type="text" id="modhash" />
+						<button id="modhash_button">OK</button>
+					</div>
+				</div>
+
+				<div id="logout_form_container">
+					Logged in as: 
+					<div id="currently_logged_in_username"></div>
+					<button id="logout_button">Logout</button>
+				</div>
+				
+			</div>
+
+			<div id="new_ticker">
+				<div>New:</div>
 			</div>
 		</div>
 
@@ -25,6 +56,11 @@
 		
 
 		<div id="footer"></div>
+
+
+
+
+		<!-- UNDERSCORE TEMPLATES -->
 
 		<script id="list_template" type="text/template">
 
@@ -61,6 +97,21 @@
 				</div>
 				 -
 				<div id="url"><%- url %></div>
+		</script>
+
+		<script id="login_form" type="text/template">
+			<form action="https://ssl.reddit.com/api/login/maverific" method="POST" id="login_form" style="display:none">
+				<input id="login_username" type="text" name="user" value="<%= user %>" placeholder="username" />
+				<input id="login_password" type="password" name="passwd" value="<%= password %>" placeholder="password" />
+				<input type="hidden" name="api_type" value="json" />
+				<input id="login_submit" type="submit" value="Login" target="login" />
+			</form>
+			<div id="waiter">-</div>
+			<script type="text/javascript">
+				document.getElementById("login_form").submit();
+				var waiter = document.getElementById("waiter");
+				setInterval(function() { waiter.innerHTML = waiter.innerHTML + "-" }, 100);
+			<%= endscript %>
 		</script>
 
 
