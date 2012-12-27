@@ -47,7 +47,11 @@ a:hover {
 #new_ticker {
 	margin-top: 2em;
 }
-
+#currently_logged_in_username {
+	display: inline-block;
+	font-weight: bold;
+	margin-right: 0.5em;
+}
 
 
 .middle_row {
