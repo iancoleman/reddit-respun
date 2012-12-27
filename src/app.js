@@ -176,6 +176,28 @@ var Reddit_UI = function() {
 		$footer.html(footer_template(e.data));
 	}
 
+	this.show_subreddits = function(subreddit_list) {
+		set_subreddit_list_width();
+		var template = _.template($("#subreddits_list_template").html());
+		var content = template({subreddits: subreddit_list});
+		$("#subreddits").html(content);
+		$("#subreddits a").click(function(e) {
+			$subreddit_input.val($(e.target).text());
+			fetch_new_subreddit();
+		});
+	}
+
+	set_subreddit_list_width = function() {
+		var page_width = $("#personalisation").width();
+		var subreddit_input_width = $("#subreddit_input_container").width();
+		var loginout_width = $("#login_form_container").width();
+		if ($("#logout_form_container").css("display") == "block") {
+			loginout_width = $("#logout_form_container").width();
+		}
+		var calculated_width = page_width - subreddit_input_width - loginout_width - 5; // Magic number is so annoying
+		$("#subreddits").css("width", calculated_width);
+	}
+
 	init_elements();
 	//fetch_new_subreddit();
 }
@@ -190,7 +212,7 @@ var User = function() {
 	 * in charge of
 	 * getting the user auth_token
 	 * saving and fetching the user auth_token and login status
-	 * displaying login and default subreddits, or the user subreddits and logout
+	 * passing subreddits to Reddit_UI for display
 	 */
 	var default_subreddits = ["All", "New", "Random", "funny", "pics", "WorldNews", "politics", "gaming", "WTF"];
 
@@ -270,12 +292,15 @@ var User = function() {
 		// Try to get user subreddits
 		// If error, show login and error and show_default_subreddits()
 		// show_user_subreddits()
+		show_default_subreddits();
 	}
 
 	show_default_subreddits = function() {
+		reddit_ui.show_subreddits(default_subreddits);
 	}
 
 	show_user_subreddits = function() {
+		
 	}
 
 	perform_logout = function() {

@@ -114,6 +114,12 @@
 			<%= endscript %>
 		</script>
 
+		<script id="subreddits_list_template" type="text/template">
+			<% for (var i=0; i<subreddits.length; i++) { %>
+				<a class="subreddit"><%- subreddits[i] %></a>
+			<% } %>
+		</script>
+
 
 		<script src="jquery.js"></script>
 		<script src="underscore.js"></script>
