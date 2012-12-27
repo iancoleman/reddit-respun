@@ -145,10 +145,10 @@ var Reddit_UI = function() {
 	handle_new_subreddit_data = function(json) {
 		clearTimeout(subreddit_jsonp_wait_event);
 		settings.last_visited_subreddit($subreddit_input.val());
-		settings.add_to_total_posts_fetched(json);
-		settings.set_last_post_name(json);
 		set_subreddit_input_status("success");
 		display_reddits(json);
+		settings.add_to_total_posts_fetched(json);
+		settings.set_last_post_name(json);
 	}
 
 	handle_subreddit_jsonp_error = function() {
@@ -159,6 +159,7 @@ var Reddit_UI = function() {
 		var list = reddits.data.children;
 		for (var i=0; i<list.length; i++) {
 			var reddit_data = list[i].data;
+			reddit_data.list_index = settings.total_posts_fetched + i + 1; // Ugly magic numbers...
 			var content = list_template(reddit_data);
 
 			// Backbone... nah... not to replace 6 lines of code
