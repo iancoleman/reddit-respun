@@ -4,6 +4,8 @@ var settings = {
 	subreddit_keyup_delay: 1000,
 	auth_token: "",
 	is_logged_in: false,
+	total_posts_fetched: 0,
+	last_post_name: "",
 	
 	last_visited_subreddit: function(val) {
 		var last_visited_subreddit = get_set("last_visited_subreddit", val)
@@ -17,7 +19,21 @@ var settings = {
 	},
 	modhash: function(val) {
 		return get_set("modhash", val);
+	},
+	add_to_total_posts_fetched: function(json) {
+		this.total_posts_fetched = this.total_posts_fetched + json.data.children.length;
+	},
+	reset_total_posts_fetched: function() {
+		this.total_posts_fetched = 0;
+	},
+	set_last_post_name: function(json) {
+		var last_index = json.data.children.length-1;
+		settings.last_post_name = json.data.children[last_index].data.name;	
+	},
+	reset_last_post_name: function() {
+		this.last_post_name = "";
 	}
+	
 }
 
 get_set = function(key, val) {
@@ -46,12 +62,44 @@ var Reddit_UI = function() {
 
 	init_elements = function() {
 		init_subreddit_input();
+		init_infinite_scroll();
 	}
 
 	init_subreddit_input = function() {
 		var last_visited_subreddit = settings.last_visited_subreddit();
 		$subreddit_input.val(last_visited_subreddit);
-		//$subreddit_input.keyup(wait_to_fetch_new_subreddit);
+		$subreddit_input.keyup(wait_to_fetch_new_subreddit);
+	}
+
+	init_infinite_scroll = function() {
+		var fetching = false;
+		var check_if_should_fetch_interval = 2000; //ms
+		setInterval(function() {
+			var buffer = 100; //px
+			var should_fetch = $reddit_list.scrollTop() > $reddit_list[0].scrollHeight - $reddit_list.height() - buffer &&
+								$reddit_list.children().length > 0 &&
+								$reddit_list.scrollTop() > 0
+			if (should_fetch && !fetching) {
+				fetching = true;
+				infinite_scroll_jsonp_wait_event = setTimeout(handle_infinte_scroll_jsonp_error, settings.jsonp_timeout_wait_period);
+				// TODO Display loading logo
+				var next_set_url = "http://www.reddit.com/r/" + $subreddit_input.val() + "/.json?jsonp=?"
+				next_set_url += "&count=" + settings.total_posts_fetched + "&after=" + settings.last_post_name;
+				console.log("Infinte scrolling with url " + next_set_url);
+				$.getJSON(next_set_url, function(json) {
+					clearTimeout(infinite_scroll_jsonp_wait_event);
+					display_reddits(json)
+					// TODO Hide loading logo
+					fetching = false;
+					settings.add_to_total_posts_fetched(json);
+					settings.set_last_post_name(json);
+				})
+			}
+		}, check_if_should_fetch_interval);
+	}
+
+	handle_infinte_scroll_jsonp_error = function(data) {
+		// TODO display error instead of loading
 	}
 
 	wait_to_fetch_new_subreddit = function(e) {
@@ -87,17 +135,20 @@ var Reddit_UI = function() {
 	}
 
 	fetch_new_subreddit = function() {
-		jsonp_has_completed_successfully = false;
 		set_subreddit_input_status("fetching");
+		settings.reset_total_posts_fetched();
+		settings.reset_last_post_name();
 		$.getJSON("http://www.reddit.com/r/" + $subreddit_input.val() +"/.json?jsonp=?", handle_new_subreddit_data);
 		subreddit_jsonp_wait_event = setTimeout(handle_subreddit_jsonp_error, settings.jsonp_timeout_wait_period);
 	}
 
-	handle_new_subreddit_data = function(data) {
+	handle_new_subreddit_data = function(json) {
 		clearTimeout(subreddit_jsonp_wait_event);
 		settings.last_visited_subreddit($subreddit_input.val());
+		settings.add_to_total_posts_fetched(json);
+		settings.set_last_post_name(json);
 		set_subreddit_input_status("success");
-		display_reddits(data);
+		display_reddits(json);
 	}
 
 	handle_subreddit_jsonp_error = function() {
