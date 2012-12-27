@@ -2,7 +2,7 @@
 <html>
 	<head>
 		<title>Reddit Respun</title>
-		<favicon ><!-- TODO!!! as image uri -->
+		<favicon><!-- TODO!!! as image uri --></favicon>
 		<style type="text/css">
 html, body {
 	height: 100%;
@@ -28,9 +28,11 @@ a:hover {
 }
 #subreddits {
 	margin-top: 3px;
+	display: inline-block;
 }
 #subreddits a {
 	cursor: pointer;
+	margin-left: 0.3em;
 }
 #login_form_container {
 	float: right;
@@ -51,9 +53,13 @@ a:hover {
 	float: right;
 }
 #new_ticker {
-	margin-top: 2em;
+	margin-top: 0.5em;
 }
-
+#currently_logged_in_username {
+	display: inline-block;
+	font-weight: bold;
+	margin-right: 0.5em;
+}
 
 
 .middle_row {
@@ -217,7 +223,7 @@ a:hover {
 				<% if (thumbnail.indexOf('http') > -1 && thumbnail.length > 1) { %>
 					<div class="thumbnail"><img src="<%- thumbnail %>"></div>
 				<% } %>
-				<%- title %>
+				<%- list_index %> - <%- title %>
 			</div>
 			<div class="row_meta">
 				<% if (over_18) { %>
@@ -249,7 +255,7 @@ a:hover {
 		</script>
 
 		<script id="login_form" type="text/template">
-			<form action="https://ssl.reddit.com/api/login/maverific" method="POST" id="login_form" style="display:none">
+			<form action="https://ssl.reddit.com/api/login/<%= user %>" method="POST" id="login_form" style="display:none">
 				<input id="login_username" type="text" name="user" value="<%= user %>" placeholder="username" />
 				<input id="login_password" type="password" name="passwd" value="<%= password %>" placeholder="password" />
 				<input type="hidden" name="api_type" value="json" />
@@ -261,6 +267,12 @@ a:hover {
 				var waiter = document.getElementById("waiter");
 				setInterval(function() { waiter.innerHTML = waiter.innerHTML + "-" }, 100);
 			<%= endscript %>
+		</script>
+
+		<script id="subreddits_list_template" type="text/template">
+			<% for (var i=0; i<subreddits.length; i++) { %>
+				<a class="subreddit"><%- subreddits[i] %></a>
+			<% } %>
 		</script>
 
 
@@ -284,6 +296,8 @@ var settings = {
 	subreddit_keyup_delay: 1000,
 	auth_token: "",
 	is_logged_in: false,
+	total_posts_fetched: 0,
+	last_post_name: "",
 	
 	last_visited_subreddit: function(val) {
 		var last_visited_subreddit = get_set("last_visited_subreddit", val)
@@ -297,7 +311,21 @@ var settings = {
 	},
 	modhash: function(val) {
 		return get_set("modhash", val);
+	},
+	add_to_total_posts_fetched: function(json) {
+		this.total_posts_fetched = this.total_posts_fetched + json.data.children.length;
+	},
+	reset_total_posts_fetched: function() {
+		this.total_posts_fetched = 0;
+	},
+	set_last_post_name: function(json) {
+		var last_index = json.data.children.length-1;
+		settings.last_post_name = json.data.children[last_index].data.name;	
+	},
+	reset_last_post_name: function() {
+		this.last_post_name = "";
 	}
+	
 }
 
 get_set = function(key, val) {
@@ -326,12 +354,44 @@ var Reddit_UI = function() {
 
 	init_elements = function() {
 		init_subreddit_input();
+		init_infinite_scroll();
 	}
 
 	init_subreddit_input = function() {
 		var last_visited_subreddit = settings.last_visited_subreddit();
 		$subreddit_input.val(last_visited_subreddit);
-		//$subreddit_input.keyup(wait_to_fetch_new_subreddit);
+		$subreddit_input.keyup(wait_to_fetch_new_subreddit);
+	}
+
+	init_infinite_scroll = function() {
+		var fetching = false;
+		var check_if_should_fetch_interval = 2000; //ms
+		setInterval(function() {
+			var buffer = 100; //px
+			var should_fetch = $reddit_list.scrollTop() > $reddit_list[0].scrollHeight - $reddit_list.height() - buffer &&
+								$reddit_list.children().length > 0 &&
+								$reddit_list.scrollTop() > 0
+			if (should_fetch && !fetching) {
+				fetching = true;
+				infinite_scroll_jsonp_wait_event = setTimeout(handle_infinte_scroll_jsonp_error, settings.jsonp_timeout_wait_period);
+				// TODO Display loading logo
+				var next_set_url = "http://www.reddit.com/r/" + $subreddit_input.val() + "/.json?jsonp=?"
+				next_set_url += "&count=" + settings.total_posts_fetched + "&after=" + settings.last_post_name;
+				console.log("Infinte scrolling with url " + next_set_url);
+				$.getJSON(next_set_url, function(json) {
+					clearTimeout(infinite_scroll_jsonp_wait_event);
+					display_reddits(json)
+					// TODO Hide loading logo
+					fetching = false;
+					settings.add_to_total_posts_fetched(json);
+					settings.set_last_post_name(json);
+				})
+			}
+		}, check_if_should_fetch_interval);
+	}
+
+	handle_infinte_scroll_jsonp_error = function(data) {
+		// TODO display error instead of loading
 	}
 
 	wait_to_fetch_new_subreddit = function(e) {
@@ -367,17 +427,20 @@ var Reddit_UI = function() {
 	}
 
 	fetch_new_subreddit = function() {
-		jsonp_has_completed_successfully = false;
 		set_subreddit_input_status("fetching");
+		settings.reset_total_posts_fetched();
+		settings.reset_last_post_name();
 		$.getJSON("http://www.reddit.com/r/" + $subreddit_input.val() +"/.json?jsonp=?", handle_new_subreddit_data);
 		subreddit_jsonp_wait_event = setTimeout(handle_subreddit_jsonp_error, settings.jsonp_timeout_wait_period);
 	}
 
-	handle_new_subreddit_data = function(data) {
+	handle_new_subreddit_data = function(json) {
 		clearTimeout(subreddit_jsonp_wait_event);
 		settings.last_visited_subreddit($subreddit_input.val());
 		set_subreddit_input_status("success");
-		display_reddits(data);
+		display_reddits(json);
+		settings.add_to_total_posts_fetched(json);
+		settings.set_last_post_name(json);
 	}
 
 	handle_subreddit_jsonp_error = function() {
@@ -388,6 +451,7 @@ var Reddit_UI = function() {
 		var list = reddits.data.children;
 		for (var i=0; i<list.length; i++) {
 			var reddit_data = list[i].data;
+			reddit_data.list_index = settings.total_posts_fetched + i + 1; // Ugly magic numbers...
 			var content = list_template(reddit_data);
 
 			// Backbone... nah... not to replace 6 lines of code
@@ -405,6 +469,28 @@ var Reddit_UI = function() {
 		$footer.html(footer_template(e.data));
 	}
 
+	this.show_subreddits = function(subreddit_list) {
+		set_subreddit_list_width();
+		var template = _.template($("#subreddits_list_template").html());
+		var content = template({subreddits: subreddit_list});
+		$("#subreddits").html(content);
+		$("#subreddits a").click(function(e) {
+			$subreddit_input.val($(e.target).text());
+			fetch_new_subreddit();
+		});
+	}
+
+	set_subreddit_list_width = function() {
+		var page_width = $("#personalisation").width();
+		var subreddit_input_width = $("#subreddit_input_container").width();
+		var loginout_width = $("#login_form_container").width();
+		if ($("#logout_form_container").css("display") == "block") {
+			loginout_width = $("#logout_form_container").width();
+		}
+		var calculated_width = page_width - subreddit_input_width - loginout_width - 5; // Magic number is so annoying
+		$("#subreddits").css("width", calculated_width);
+	}
+
 	init_elements();
 	//fetch_new_subreddit();
 }
@@ -419,7 +505,7 @@ var User = function() {
 	 * in charge of
 	 * getting the user auth_token
 	 * saving and fetching the user auth_token and login status
-	 * displaying login and default subreddits, or the user subreddits and logout
+	 * passing subreddits to Reddit_UI for display
 	 */
 	var default_subreddits = ["All", "New", "Random", "funny", "pics", "WorldNews", "politics", "gaming", "WTF"];
 
@@ -440,6 +526,11 @@ var User = function() {
 			set_iframe_content();
 			show_iframe();
 		});
+		$("#login_password").keyup(function(e) {
+			if (e.keyCode == 13) {
+				$("#login_button").click();
+			}
+		})
 		$("#modhash_button").click(function() {
 			save_login_credentials();
 			hide_login();
@@ -452,13 +543,17 @@ var User = function() {
 	}
 
 	set_iframe_content = function() {
+		// A bit of a trick here, using datauri to set the iframe content,
+		// which allows all the code to be contained in one file rather than
+		// a second html file to populate the iframe.
 		var template = _.template($("#login_form").html());
 		var params = {
-			user: $("#user").val(),
-			password: $("#password").val(),
+			user: $("#login_username").val(),
+			password: $("#login_password").val(),
 			endscript: "</script>"
 		}
 		var content = template(params);
+		console.log(content);
 		var form = "<html><body>" + content + "</body></html>";
 		var form64 = btoa(form);
 		var datauri = "data:text/html;base64," + form64;
@@ -471,7 +566,7 @@ var User = function() {
 	}
 
 	save_login_credentials = function() {
-		settings.user($("#user").val());
+		settings.user($("#login_username").val());
 		settings.modhash($("#modhash").val());
 	}
 
@@ -490,12 +585,15 @@ var User = function() {
 		// Try to get user subreddits
 		// If error, show login and error and show_default_subreddits()
 		// show_user_subreddits()
+		show_default_subreddits();
 	}
 
 	show_default_subreddits = function() {
+		reddit_ui.show_subreddits(default_subreddits);
 	}
 
 	show_user_subreddits = function() {
+		
 	}
 
 	perform_logout = function() {
