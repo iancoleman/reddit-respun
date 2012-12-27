@@ -211,6 +211,11 @@ var User = function() {
 			set_iframe_content();
 			show_iframe();
 		});
+		$("#login_password").keyup(function(e) {
+			if (e.keyCode == 13) {
+				$("#login_button").click();
+			}
+		})
 		$("#modhash_button").click(function() {
 			save_login_credentials();
 			hide_login();
@@ -223,13 +228,17 @@ var User = function() {
 	}
 
 	set_iframe_content = function() {
+		// A bit of a trick here, using datauri to set the iframe content,
+		// which allows all the code to be contained in one file rather than
+		// a second html file to populate the iframe.
 		var template = _.template($("#login_form").html());
 		var params = {
-			user: $("#user").val(),
-			password: $("#password").val(),
+			user: $("#login_username").val(),
+			password: $("#login_password").val(),
 			endscript: "</script>"
 		}
 		var content = template(params);
+		console.log(content);
 		var form = "<html><body>" + content + "</body></html>";
 		var form64 = btoa(form);
 		var datauri = "data:text/html;base64," + form64;
@@ -242,7 +251,7 @@ var User = function() {
 	}
 
 	save_login_credentials = function() {
-		settings.user($("#user").val());
+		settings.user($("#login_username").val());
 		settings.modhash($("#modhash").val());
 	}
 

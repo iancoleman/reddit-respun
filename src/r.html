@@ -2,7 +2,7 @@
 <html>
 	<head>
 		<title>Reddit Respun</title>
-		<favicon ><!-- TODO!!! as image uri -->
+		<favicon><!-- TODO!!! as image uri --></favicon>
 		<link rel="stylesheet" type="text/css" href="style.css">
 	</head>
 	<body>
@@ -100,7 +100,7 @@
 		</script>
 
 		<script id="login_form" type="text/template">
-			<form action="https://ssl.reddit.com/api/login/maverific" method="POST" id="login_form" style="display:none">
+			<form action="https://ssl.reddit.com/api/login/<%= user %>" method="POST" id="login_form" style="display:none">
 				<input id="login_username" type="text" name="user" value="<%= user %>" placeholder="username" />
 				<input id="login_password" type="password" name="passwd" value="<%= password %>" placeholder="password" />
 				<input type="hidden" name="api_type" value="json" />
