@@ -92,6 +92,7 @@ func (h Hello) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func start_server() {
 	var h Hello
+	fmt.Println("Serving at localhost:8000")
 	http.ListenAndServe("localhost:8000",h)
 }
 
